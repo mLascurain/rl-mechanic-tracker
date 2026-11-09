@@ -1,0 +1,32 @@
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    - cron: '17 0,8,16 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Configure SUPABASE_URL and SUPABASE_ANON_KEY in GitHub Actions secrets."
+            exit 1
+          fi
+          [[ "$SUPABASE_URL" =~ ^https://[a-z0-9]+\.supabase\.co/?$ ]] || exit 1
+          status=$(curl --silent --max-time 15 --retry 2 --retry-max-time 40 \
+            "${SUPABASE_URL%/}/rest/v1/ranks?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -o /dev/null --write-out '%{http_code}')
+          if [[ "$status" != 200 && "$status" != 206 ]]; then
+            echo "Supabase catalog check failed (HTTP $status)."
+            exit 1
+          fi
+          echo "Supabase ping successful"

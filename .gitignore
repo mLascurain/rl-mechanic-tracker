@@ -1,0 +1,97 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Test and coverage output
+/coverage
+/test-results
+/playwright-report
+
+# Local Supabase CLI state
+/supabase/.temp/
+/supabase/.branches/
+
+# Next.js
+/.next/
+/out/
+
+# Build output
+/build
+/dist
+
+# Local and OS files
+.DS_Store
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.mobileprovision
+*.provisionprofile
+*.log
+*.swp
+*.swo
+*.tmp
+*.temp
+*.bak
+*.orig
+/tmp/
+/temp/
+*~
+Thumbs.db
+Desktop.ini
+
+# Package manager and debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Secrets and local environment files. Keep only the documented placeholder file.
+.env*
+!/.env.local.example
+!/.env.example
+
+# Hosting and local tool state
+.vercel
+.turbo
+.cache
+.eslintcache
+
+# TypeScript generated state
+*.tsbuildinfo
+next-env.d.ts
+
+# Local documentation and workspace instructions
+/docs/
+[Rr][Ee][Aa][Dd][Mm][Ee]*
+# Keep project documentation local, except required asset attribution.
+*.md
+!/public/ranks/README.md
+
+# Only publish the approved hidden configuration files and workflows.
+.*
+!/.gitignore
+!/.env.example
+!/.env.local.example
+!/.github/
+/.github/*
+!/.github/workflows/
+skills/
+agents/
+.npmrc
+*.jks
+*.keystore
+*.kubeconfig
+credentials.json
+credentials-*.json
+*-credentials.json
+service-account*.json
+id_rsa*
+id_ed25519*
