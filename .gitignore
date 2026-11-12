@@ -74,6 +74,7 @@ next-env.d.ts
 # Keep project documentation local, except required asset attribution.
 *.md
 !/public/ranks/README.md
+!/README.md
 
 # Only publish the approved hidden configuration files and workflows.
 .*
@@ -95,3 +96,8 @@ credentials-*.json
 service-account*.json
 id_rsa*
 id_ed25519*
+
+# README screenshots and walkthrough
+!/public/readme/
+!/public/readme/*.jpg
+!/public/readme/*.gif
