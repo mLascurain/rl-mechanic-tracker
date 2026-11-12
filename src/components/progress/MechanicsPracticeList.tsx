@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
+import Link from '@/components/layout/NavigationLink'
 import type { ProgressMechanicItem } from '@/lib/data/progress'
 import { RankBadge } from '@/components/profile/RankBadge'
 import { MechanicStatusToggle } from '@/components/mechanics/MechanicStatusToggle'

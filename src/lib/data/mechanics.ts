@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { cache } from 'react'
+import { createClient, getUser } from '@/lib/supabase/server'
 import type { MechanicStatus, Rank } from '@/types/database.types'
 
 export type { MechanicStatus }
@@ -59,60 +60,32 @@ export interface MechanicDetail {
 export async function getMechanicsCatalog(): Promise<MechanicCatalogItem[]> {
   const supabase = await createClient()
 
-  // 1. Check user session
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Public catalog reads do not depend on authentication. Only status needs a user.
+  const [mechanicsRes, prereqRes, userMechanicsRes] = await Promise.all([
+    supabase.from('mechanics').select(`
+      id, slug, name, description, category, difficulty, recommended_rank_id,
+      ranks (id, name, sort_order)
+    `),
+    supabase.from('mechanic_prerequisites').select('mechanic_id'),
+    getUser().then(async ({ data: { user } }) => {
+      if (!user) return { data: [], error: null }
+      return supabase.from('user_mechanics')
+        .select('mechanic_id, status').eq('user_id', user.id)
+    }),
+  ])
 
-  // 2. Fetch mechanics joined with ranks
-  const { data: mechanics, error: mechanicsError } = await supabase
-    .from('mechanics')
-    .select(`
-      id,
-      slug,
-      name,
-      description,
-      category,
-      difficulty,
-      recommended_rank_id,
-      ranks (
-        id,
-        name,
-        sort_order
-      )
-    `)
-
-  if (mechanicsError || !mechanics) {
-    console.error('Error fetching mechanics catalog:', mechanicsError?.message)
-    return []
+  for (const result of [mechanicsRes, prereqRes, userMechanicsRes]) {
+    if (result.error) throw new Error('Unable to load mechanics catalog', { cause: result.error })
   }
-
-  // 3. Fetch all prerequisite edges to count prerequisites per mechanic
-  const { data: prereqRows } = await supabase
-    .from('mechanic_prerequisites')
-    .select('mechanic_id')
-
+  const mechanics = mechanicsRes.data ?? []
   const prereqCountMap = new Map<string, number>()
-  if (prereqRows) {
-    for (const row of prereqRows) {
-      prereqCountMap.set(row.mechanic_id, (prereqCountMap.get(row.mechanic_id) || 0) + 1)
-    }
+  for (const row of prereqRes.data ?? []) {
+    prereqCountMap.set(row.mechanic_id, (prereqCountMap.get(row.mechanic_id) ?? 0) + 1)
   }
-
-  // 4. If user is logged in, fetch user's mechanic statuses
   const userStatusMap = new Map<string, MechanicStatus>()
-  if (user) {
-    const { data: userMechanics } = await supabase
-      .from('user_mechanics')
-      .select('mechanic_id, status')
-      .eq('user_id', user.id)
-
-    if (userMechanics) {
-      for (const item of userMechanics) {
-        if (item.status === 'learning' || item.status === 'mastered') {
-          userStatusMap.set(item.mechanic_id, item.status)
-        }
-      }
+  for (const item of userMechanicsRes.data ?? []) {
+    if (item.status === 'learning' || item.status === 'mastered') {
+      userStatusMap.set(item.mechanic_id, item.status)
     }
   }
 
@@ -153,13 +126,14 @@ export async function getMechanicsCatalog(): Promise<MechanicCatalogItem[]> {
  * - Resources (videos and custom training map codes)
  * - Current user status for this mechanic and prerequisites
  */
-export async function getMechanicDetail(slug: string): Promise<MechanicDetail | null> {
+export const getMechanicDetail = cache(async function getMechanicDetail(slug: string): Promise<MechanicDetail | null> {
   if (!slug) return null
 
   const supabase = await createClient()
 
-  // 1. Fetch mechanic by slug joined with ranks (*)
-  const { data: mechanic, error: mechanicError } = await supabase
+  // Fetch the mechanic and verify the user concurrently.
+  const [{ data: mechanic, error: mechanicError }, { data: { user } }] = await Promise.all([
+    supabase
     .from('mechanics')
     .select(`
       id,
@@ -169,70 +143,38 @@ export async function getMechanicDetail(slug: string): Promise<MechanicDetail | 
       category,
       difficulty,
       recommended_rank_id,
-      ranks (*)
+      ranks (id, name, sort_order)
     `)
     .eq('slug', slug)
-    .maybeSingle()
+    .maybeSingle(),
+    getUser(),
+  ])
 
-  if (mechanicError || !mechanic) {
-    if (mechanicError) {
-      console.error(`Error fetching mechanic by slug ${slug}:`, mechanicError.message)
-    }
-    return null
-  }
+  if (mechanicError) throw new Error('Unable to load mechanic', { cause: mechanicError })
+  if (!mechanic) return null
 
-  // 2. Fetch required prerequisites: mechanic_prerequisites where mechanic_id = mechanic.id
-  const { data: prereqLinks, error: prereqError } = await supabase
-    .from('mechanic_prerequisites')
-    .select(`
+  // These three reads all depend on the mechanic ID, but not on one another.
+  const [prereqRes, unlockRes, resourcesRes] = await Promise.all([
+    supabase.from('mechanic_prerequisites').select(`
       prerequisite:mechanics!mechanic_prerequisites_prerequisite_id_fkey (
-        id,
-        slug,
-        name,
-        difficulty,
-        category,
-        ranks (*)
+        id, slug, name, difficulty, category, ranks (id, name, sort_order)
       )
-    `)
-    .eq('mechanic_id', mechanic.id)
-
-  if (prereqError) {
-    console.error('Error fetching prerequisites:', prereqError.message)
-  }
-
-  // 3. Fetch unlocked mechanics ("Desbloquea"): mechanic_prerequisites where prerequisite_id = mechanic.id
-  const { data: unlockLinks, error: unlockError } = await supabase
-    .from('mechanic_prerequisites')
-    .select(`
+    `).eq('mechanic_id', mechanic.id),
+    supabase.from('mechanic_prerequisites').select(`
       unlocked:mechanics!mechanic_prerequisites_mechanic_id_fkey (
-        id,
-        slug,
-        name,
-        difficulty,
-        category,
-        ranks (*)
+        id, slug, name, difficulty, category, ranks (id, name, sort_order)
       )
-    `)
-    .eq('prerequisite_id', mechanic.id)
-
-  if (unlockError) {
-    console.error('Error fetching unlocks:', unlockError.message)
+    `).eq('prerequisite_id', mechanic.id),
+    supabase.from('mechanic_resources')
+      .select('id, mechanic_id, type, title, video_url, map_code')
+      .eq('mechanic_id', mechanic.id),
+  ])
+  for (const result of [prereqRes, unlockRes, resourcesRes]) {
+    if (result.error) throw new Error('Unable to load mechanic details', { cause: result.error })
   }
-
-  // 4. Fetch resources for this mechanic
-  const { data: resourcesData, error: resourcesError } = await supabase
-    .from('mechanic_resources')
-    .select('id, mechanic_id, type, title, video_url, map_code')
-    .eq('mechanic_id', mechanic.id)
-
-  if (resourcesError) {
-    console.error('Error fetching resources:', resourcesError.message)
-  }
-
-  // 5. Gather all relevant IDs to query user statuses if user is logged in
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const prereqLinks = prereqRes.data
+  const unlockLinks = unlockRes.data
+  const resourcesData = resourcesRes.data
 
   const userStatusMap = new Map<string, MechanicStatus>()
 
@@ -253,12 +195,13 @@ export async function getMechanicDetail(slug: string): Promise<MechanicDetail | 
       }
     }
 
-    const { data: userMechanics } = await supabase
+    const { data: userMechanics, error: statusError } = await supabase
       .from('user_mechanics')
       .select('mechanic_id, status')
       .eq('user_id', user.id)
       .in('mechanic_id', relevantIds)
 
+    if (statusError) throw new Error('Unable to load mechanic status', { cause: statusError })
     if (userMechanics) {
       for (const um of userMechanics) {
         if (um.status === 'learning' || um.status === 'mastered') {
@@ -335,4 +278,4 @@ export async function getMechanicDetail(slug: string): Promise<MechanicDetail | 
     unlocks,
     resources,
   }
-}
+})

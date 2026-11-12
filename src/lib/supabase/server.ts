@@ -1,13 +1,14 @@
 import { createServerClient } from '@supabase/ssr'
+import { cache } from 'react'
 import { cookies } from 'next/headers'
 import type { Database } from '@/types/database.types'
 
 /**
  * Server Component / Server Action client.
- * Always creates a fresh client per request using the cookie store.
+ * Shares a client within a Server Component request, never across users.
  * `cookies()` is async — await it inside the request-scoped factory.
  */
-export async function createClient() {
+export const createClient = cache(async function createClient() {
   const cookieStore = await cookies()
 
   return createServerClient<Database>(
@@ -30,4 +31,10 @@ export async function createClient() {
       },
     }
   )
-}
+})
+
+/** Deduplicate verified Auth lookups within one render, without persistent caching. */
+export const getUser = cache(async function getUser() {
+  const supabase = await createClient()
+  return supabase.auth.getUser()
+})

@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/layout/NavigationLink'
 import type { MechanicCatalogItem } from '@/lib/data/mechanics'
 import { RankBadge } from '@/components/profile/RankBadge'
 import { MechanicStatusToggle } from './MechanicStatusToggle'

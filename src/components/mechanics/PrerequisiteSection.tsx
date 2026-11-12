@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/layout/NavigationLink'
 import type { RelatedMechanic } from '@/lib/data/mechanics'
 import { RankBadge } from '@/components/profile/RankBadge'
 import {

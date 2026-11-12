@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ArrowRight, CalendarDays, CheckCircle2, CircleDashed, Flame } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUser } from '@/lib/supabase/server'
 import { RankSelector } from '@/components/profile/RankSelector'
 import { EditablePlayerName } from '@/components/profile/LocalPlayerName'
 import { RankBadge, RankIcon } from '@/components/profile/RankBadge'
@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: 'Player Profile | RL Mechanic Tracker
 
 export default async function ProfilePage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user } } = await getUser()
   if (!user) redirect('/auth/login?redirectTo=/profile')
 
   const [profileResult, ranksResult, progressResult, totalResult] = await Promise.all([

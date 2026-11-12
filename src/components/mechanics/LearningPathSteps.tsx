@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import Link from 'next/link'
+import Link from '@/components/layout/NavigationLink'
 import { Pagination } from '@/components/layout/Pagination'
 
 interface PracticeStep {

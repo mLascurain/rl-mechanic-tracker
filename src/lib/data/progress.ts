@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUser } from '@/lib/supabase/server'
 import type { MechanicStatus, Rank } from '@/types/database.types'
 
 export interface ProgressMechanicItem {
@@ -90,7 +90,7 @@ export async function getUserProgressStats(): Promise<UserProgressStats | null> 
   // 1. Authenticate user
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await getUser()
 
   if (!user) {
     return null
@@ -130,6 +130,10 @@ export async function getUserProgressStats(): Promise<UserProgressStats | null> 
     supabase.from('user_mechanics').select('mechanic_id, status').eq('user_id', user.id),
     supabase.from('mechanic_prerequisites').select('mechanic_id'),
   ])
+
+  for (const result of [profileRes, ranksRes, mechanicsRes, userMechanicsRes, prereqRes]) {
+    if (result.error) throw new Error('Unable to load progress', { cause: result.error })
+  }
 
   const profile = profileRes.data
   const ranksList = ranksRes.data || []

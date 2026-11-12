@@ -98,7 +98,7 @@ export function LoginForm() {
               />
             </svg>
           )}
-          <span>Continue with Google</span>
+          <span>{googleLoading ? 'Connecting to Google...' : 'Continue with Google'}</span>
         </button>
 
         {/* Divider */}
@@ -112,7 +112,8 @@ export function LoginForm() {
         </div>
 
         {/* Email / Password Form */}
-        <form action={formAction} className="space-y-4">
+        <p role="status" className="sr-only">{googleLoading ? 'Connecting to Google...' : isPending ? 'Signing in...' : ''}</p>
+        <form action={formAction} aria-busy={isPending || googleLoading} className="space-y-4">
           <input type="hidden" name="redirectTo" value={redirectTo} />
 
           <div>

@@ -51,7 +51,8 @@ export function RegisterForm() {
         )}
 
         {/* Register Form */}
-        <form action={formAction} className="space-y-4">
+        <p role="status" className="sr-only">{isPending ? 'Creating account...' : ''}</p>
+        <form action={formAction} aria-busy={isPending} className="space-y-4">
           <input type="hidden" name="redirectTo" value={redirectTo} />
 
           <div>

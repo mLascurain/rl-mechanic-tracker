@@ -16,6 +16,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
+  icons: { icon: [{ url: '/logo.svg?v=2', type: 'image/svg+xml' }], apple: '/apple-touch-icon.png?v=2' },
   title: {
     template: '%s | RL Mechanic Tracker',
     default: 'RL Mechanic Tracker | Rocket League Mastery & Skill Paths',

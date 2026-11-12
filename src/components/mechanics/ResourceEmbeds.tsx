@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getYouTubeEmbedUrl } from '@/lib/resources'
 import type { MechanicResourceItem } from '@/lib/data/mechanics'
 import {
@@ -8,6 +8,7 @@ import {
   Check,
   ExternalLink,
   Video,
+  Loader2,
   Target,
 } from 'lucide-react'
 
@@ -16,31 +17,52 @@ interface ResourceEmbedsProps {
   mechanicName: string
 }
 
+function VideoPreview({ embedUrl, title }: { embedUrl: string; title: string }) {
+  const [started, setStarted] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+
+  if (!started) {
+    return (
+      <button type="button" onClick={() => setStarted(true)} className="absolute inset-0 flex w-full flex-col items-center justify-center gap-3 p-4 text-accent hover:bg-slate-900 transition-colors" aria-label={`Load video: ${title}`}>
+        <Video className="h-9 w-9" aria-hidden="true" />
+        <span className="text-sm font-semibold">Load tutorial</span>
+        <span className="text-xs text-slate-400">YouTube player loads when selected</span>
+      </button>
+    )
+  }
+
+  return (
+    <>
+      {!loaded && <div role="status" className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-slate-400"><Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" aria-hidden="true" />Loading video...</div>}
+      <iframe src={embedUrl} title={title} onLoad={() => setLoaded(true)} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen className={`absolute inset-0 w-full h-full border-0 ${loaded ? '' : 'opacity-0'}`} />
+    </>
+  )
+}
+
 export function ResourceEmbeds({ resources, mechanicName }: ResourceEmbedsProps) {
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
+  const [copyingCode, setCopyingCode] = useState<string | null>(null)
+  const [copyError, setCopyError] = useState<string | null>(null)
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (copyTimer.current) clearTimeout(copyTimer.current) }, [])
 
   const videos = resources.filter((r) => r.type === 'video' && getYouTubeEmbedUrl(r.video_url))
   const trainingPacks = resources.filter((r) => r.type === 'map_code' && r.map_code)
 
   const handleCopyCode = async (code: string) => {
+    if (copyingCode) return
+    setCopyingCode(code)
+    setCopyError(null)
+    setCopiedCode(null)
+    if (copyTimer.current) clearTimeout(copyTimer.current)
     try {
       await navigator.clipboard.writeText(code)
       setCopiedCode(code)
-      setTimeout(() => {
-        setCopiedCode((current) => (current === code ? null : current))
-      }, 2500)
     } catch {
-      // Fallback for older browsers or permission denials
-      const textArea = document.createElement('textarea')
-      textArea.value = code
-      document.body.appendChild(textArea)
-      textArea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textArea)
-      setCopiedCode(code)
-      setTimeout(() => {
-        setCopiedCode((current) => (current === code ? null : current))
-      }, 2500)
+      setCopyError('Could not copy automatically. Select the code above and copy it manually.')
+    } finally {
+      setCopyingCode(null)
+      copyTimer.current = setTimeout(() => setCopiedCode(null), 2500)
     }
   }
 
@@ -110,6 +132,8 @@ export function ResourceEmbeds({ resources, mechanicName }: ResourceEmbedsProps)
 
                       <button
                         type="button"
+                        disabled={copyingCode !== null}
+                        aria-busy={copyingCode === pack.map_code}
                         onClick={() => pack.map_code && handleCopyCode(pack.map_code)}
                         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           isCopied
@@ -118,7 +142,7 @@ export function ResourceEmbeds({ resources, mechanicName }: ResourceEmbedsProps)
                         }`}
                         aria-label={`Copy code ${pack.map_code}`}
                       >
-                        {isCopied ? (
+                        {copyingCode === pack.map_code ? <><Loader2 className="w-3.5 h-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" /><span>Copying...</span></> : isCopied ? (
                           <>
                             <Check className="w-3.5 h-3.5 stroke-[3]" />
                             <span>Copied!</span>
@@ -142,6 +166,7 @@ export function ResourceEmbeds({ resources, mechanicName }: ResourceEmbedsProps)
               )
             })}
           </div>
+          <p role="status" aria-live="polite" className={`min-h-5 text-xs ${copyError ? 'text-secondary' : 'text-success'}`}>{copyError || (copiedCode ? 'Training code copied.' : '')}</p>
         </section>
       )}
 
@@ -172,14 +197,7 @@ export function ResourceEmbeds({ resources, mechanicName }: ResourceEmbedsProps)
                   {/* Video Embed */}
                   <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl">
                     {embedUrl ? (
-                      <iframe
-                        src={embedUrl}
-                        title={title}
-                        loading="lazy"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                        className="absolute inset-0 w-full h-full border-0"
-                      />
+                      <VideoPreview embedUrl={embedUrl} title={title} />
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full text-slate-500 p-4 text-center">
                         <Video className="w-8 h-8 mb-2" />

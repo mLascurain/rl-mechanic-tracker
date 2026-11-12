@@ -26,6 +26,7 @@ export function MechanicStatusToggle({
   const [isPending, startTransition] = useTransition()
   const [pendingTarget, setPendingTarget] = useState<MechanicStatus | 'not_started' | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
 
   const handleToggle = (
     e: React.MouseEvent,
@@ -39,12 +40,14 @@ export function MechanicStatusToggle({
 
     // If clicking current status, toggle to null (not started)
     const newStatus = status === targetStatus ? null : targetStatus
+    if (newStatus === status) return
     const previousStatus = status
 
     // Optimistic UI update
     setStatus(newStatus)
     setPendingTarget(targetStatus === null ? 'not_started' : targetStatus)
     setErrorMessage(null)
+    setSaved(false)
 
     if (onStatusChange) {
       onStatusChange(newStatus)
@@ -62,6 +65,8 @@ export function MechanicStatusToggle({
           } else {
             setErrorMessage(result.error)
           }
+        } else {
+          setSaved(true)
         }
       } catch (err: unknown) {
         setStatus(previousStatus)
@@ -77,8 +82,10 @@ export function MechanicStatusToggle({
   if (compact) {
     return (
       <div className="relative inline-flex flex-col items-start gap-1">
+        <span role="status" className="sr-only">{isPending ? 'Saving progress...' : saved ? 'Progress saved.' : ''}</span>
         <div
           role="group"
+          aria-busy={isPending}
           aria-label="Mechanic mastery status"
           className="inline-flex items-center p-0.5 rounded-lg bg-slate-900 border border-slate-800"
         >
@@ -172,8 +179,10 @@ export function MechanicStatusToggle({
 
   return (
     <div className="space-y-2 w-full sm:w-auto">
+      <span role="status" className="sr-only">{isPending ? 'Saving progress...' : saved ? 'Progress saved.' : ''}</span>
       <div
         role="group"
+        aria-busy={isPending}
         aria-label="Mechanic mastery status toggle"
         className="grid grid-cols-3 sm:flex sm:items-center p-1 rounded-xl bg-slate-900 border border-slate-800 gap-1"
       >

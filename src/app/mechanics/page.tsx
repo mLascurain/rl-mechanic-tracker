@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { getMechanicsCatalog } from '@/lib/data/mechanics'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUser } from '@/lib/supabase/server'
 import { MechanicsCatalog } from '@/components/mechanics/MechanicsCatalog'
 import {
   Compass,
@@ -26,12 +26,13 @@ export default async function MechanicsPage() {
       .order('sort_order', { ascending: true }),
   ])
 
+  if (ranksResult.error) throw new Error('Unable to load ranks. Please try again.')
   const ranks = ranksResult.data || []
 
   // Check user session for personalized stats
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await getUser()
 
   const totalMechanics = catalog.length
   const masteredCount = catalog.filter((m) => m.userStatus === 'mastered').length

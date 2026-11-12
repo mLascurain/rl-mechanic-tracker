@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
+import { useActionState, useState } from 'react'
+import Link from '@/components/layout/NavigationLink'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { signOutAction } from '@/app/auth/actions'
 import { getRankVisuals } from '@/lib/ranks'
@@ -16,6 +17,7 @@ import {
   Compass,
   Activity,
   Sparkles,
+  Loader2,
 } from 'lucide-react'
 
 interface NavbarClientProps {
@@ -33,6 +35,7 @@ interface NavbarClientProps {
 export function NavbarClient({ user, userRank, username }: NavbarClientProps) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [signOutState, signOutFormAction, isSigningOut] = useActionState(signOutAction, null)
   const rankVisuals = getRankVisuals(userRank?.name)
 
   const navLinks = [
@@ -50,6 +53,7 @@ export function NavbarClient({ user, userRank, username }: NavbarClientProps) {
           className="flex items-center gap-3 group focus-visible:outline-none"
           onClick={() => setMobileMenuOpen(false)}
         >
+          <Image src="/logo.svg?v=2" width={36} height={36} alt="" className="h-9 w-9 shrink-0" />
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5 font-semibold tracking-tight text-base sm:text-lg">
               <span className="text-accent">
@@ -111,14 +115,15 @@ export function NavbarClient({ user, userRank, username }: NavbarClientProps) {
               </Link>
 
               {/* Sign Out Action Button */}
-              <form action={signOutAction}>
+              <form action={signOutFormAction} aria-busy={isSigningOut}>
                 <button
                   type="submit"
-                  title="Sign out of Tracker"
-                  aria-label="Sign out"
+                  disabled={isSigningOut}
+                  title={isSigningOut ? 'Signing out...' : 'Sign out of Tracker'}
+                  aria-label={isSigningOut ? 'Signing out...' : 'Sign out'}
                   className="flex items-center justify-center p-2 rounded-lg bg-slate-900/80 hover:bg-secondary/10 border border-slate-800 hover:border-secondary/40 text-slate-400 hover:text-secondary transition-all cursor-pointer"
                 >
-                  <LogOut className="w-4 h-4" />
+                  {isSigningOut ? <Loader2 className="w-4 h-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <LogOut className="w-4 h-4" />}
                 </button>
               </form>
             </div>
@@ -160,6 +165,10 @@ export function NavbarClient({ user, userRank, username }: NavbarClientProps) {
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
+      </div>
+
+      <div role="status" aria-live="polite" className={signOutState?.error && !isSigningOut ? 'border-t border-secondary/40 bg-slate-950 px-4 py-2 text-center text-sm text-secondary' : 'sr-only'}>
+        {isSigningOut ? 'Signing out...' : signOutState?.error || ''}
       </div>
 
       {/* Mobile Menu Dropdown */}
@@ -209,13 +218,14 @@ export function NavbarClient({ user, userRank, username }: NavbarClientProps) {
                   </span>
                 </Link>
 
-                <form action={signOutAction}>
+                <form action={signOutFormAction} aria-busy={isSigningOut}>
                   <button
                     type="submit"
+                    disabled={isSigningOut}
                     className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-secondary/10 hover:bg-secondary/10 border border-secondary/50 text-secondary text-xs font-semibold cursor-pointer"
                   >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Sign Out</span>
+                    {isSigningOut ? <Loader2 className="w-3.5 h-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <LogOut className="w-3.5 h-3.5" />}
+                    <span>{isSigningOut ? 'Signing out...' : 'Sign Out'}</span>
                   </button>
                 </form>
               </div>

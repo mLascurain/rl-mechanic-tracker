@@ -2,7 +2,7 @@ import { RankBadge } from '@/components/profile/RankBadge'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getUser } from '@/lib/supabase/server'
 import { recommendMechanics } from '@/lib/recommendations'
 import { LearningPathSteps } from '@/components/mechanics/LearningPathSteps'
 
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: 'Learning path' }
 
 export default async function RecommendationsPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user } } = await getUser()
   if (!user) redirect('/auth/login?redirectTo=/recommendations')
 
   const [profile, ranks, mechanics, edges, progress] = await Promise.all([

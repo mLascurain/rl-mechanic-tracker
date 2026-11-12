@@ -1,14 +1,12 @@
 'use client'
 
 import { useState, useTransition, type CSSProperties } from 'react'
-import { useRouter } from 'next/navigation'
 import { AlertCircle, Check, Loader2 } from 'lucide-react'
 import { updateRank } from '@/app/profile/actions'
 import { getRankVisuals, type RankInfo } from '@/lib/ranks'
 import { RankIcon } from './RankBadge'
 
 export function RankSelector({ ranks, currentRankId }: { ranks: RankInfo[]; currentRankId: string | null }) {
-  const router = useRouter()
   const [selectedRankId, setSelectedRankId] = useState(currentRankId)
   const [pendingRankId, setPendingRankId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -23,7 +21,6 @@ export function RankSelector({ ranks, currentRankId }: { ranks: RankInfo[]; curr
         const result = await updateRank(rank.id)
         setSelectedRankId(rank.id)
         setFeedback({ success: true, message: `Saved ${result.rankName}. Your learning path is ready.` })
-        router.refresh()
       } catch (error) {
         setFeedback({ success: false, message: error instanceof Error ? error.message : 'Could not save your rank. Try again.' })
       } finally { setPendingRankId(null) }
@@ -51,6 +48,7 @@ export function RankSelector({ ranks, currentRankId }: { ranks: RankInfo[]; curr
       </div>
       {ranks.length === 0 && <p className="text-sm text-muted">Ranks could not be loaded. Please refresh to try again.</p>}
       <div className="mt-4 min-h-6" role="status" aria-live="polite">
+        {isPending && <p className="text-sm text-muted">Saving your rank...</p>}
         {feedback && <p className={`flex items-center gap-2 text-sm ${feedback.success ? 'text-success' : 'text-secondary'}`}>{feedback.success ? <Check size={16} aria-hidden="true" /> : <AlertCircle size={16} aria-hidden="true" />}{feedback.message}</p>}
       </div>
     </div>

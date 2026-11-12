@@ -91,9 +91,14 @@ export async function registerWithEmail(
   redirect(redirectTo)
 }
 
-export async function signOutAction() {
-  const supabase = await createClient()
-  await supabase.auth.signOut()
+export async function signOutAction(): Promise<AuthActionResult> {
+  try {
+    const supabase = await createClient()
+    const { error } = await supabase.auth.signOut()
+    if (error) return { error: 'Could not sign out. Please try again.' }
+  } catch {
+    return { error: 'Could not sign out. Check your connection and try again.' }
+  }
   revalidatePath('/', 'layout')
   redirect('/auth/login')
 }
