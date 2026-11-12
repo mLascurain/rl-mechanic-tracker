@@ -45,6 +45,25 @@
 }
 
 body { background: var(--background); color: var(--foreground); font-family: var(--font-geist-sans), system-ui, sans-serif; min-height: 100vh; }
+.practice-highlight { position: relative; isolation: isolate; overflow: hidden; min-height: 620px; margin: 0 0 4rem; border: 1px solid var(--border); border-radius: 16px; background: #0b0d1b; }
+.practice-highlight-media { position: absolute; inset: -12% 0; z-index: -3; }
+.practice-highlight-media video { width: 100%; height: 100%; object-fit: cover; object-position: 65% center; }
+.practice-highlight-shade { position: absolute; inset: 0; z-index: -2; background: linear-gradient(90deg, #080a17 0%, #080a17ed 28%, #080a1770 64%, #080a1720), linear-gradient(0deg, #080a17 0%, transparent 35%, #080a1740); }
+.practice-highlight-copy { max-width: 620px; padding: 5rem 3rem 7rem; }
+.practice-highlight-controls { position: absolute; bottom: 1.5rem; right: 1.5rem; left: 1.5rem; display: flex; justify-content: flex-end; align-items: center; gap: 1rem; color: var(--muted); }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) and (min-width: 768px) {
+    .practice-highlight { view-timeline-name: --highlight; }
+    .practice-highlight-media { animation: highlight-parallax linear both; animation-timeline: --highlight; animation-range: entry 0% exit 100%; }
+  }
+}
+@keyframes highlight-parallax { from { transform: translateY(-7%); } to { transform: translateY(7%); } }
+@media (max-width: 767px) {
+  .practice-highlight { min-height: 700px; }
+  .practice-highlight-copy { padding: 3rem 1.5rem 17rem; }
+  .practice-highlight-media { inset: 35% 0 0; }
+  .practice-highlight-shade { background: linear-gradient(180deg, #080a17 0%, #080a17f5 42%, #080a1740 75%, #080a17 100%); }
+}
 button, a, input, select { -webkit-tap-highlight-color: transparent; }
 button:not(:disabled), select { cursor: pointer; }
 :where(a, button, input, select, textarea):focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }

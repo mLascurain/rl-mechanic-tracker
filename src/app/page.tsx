@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { PracticeHighlight } from '@/components/PracticeHighlight'
 import { ArrowRight, Compass, Check, Route, BookOpen, ChartNoAxesCombined } from 'lucide-react'
 
 const steps = [
@@ -40,6 +41,7 @@ export default function HomePage() {
           <div className="flex items-center gap-2 text-xs text-muted mt-6"><Check className="w-4 h-4 text-progress" aria-hidden="true" />A learning path based on your rank and progress</div>
         </div>
       </section>
+      <PracticeHighlight />
       <section className="border-t border-border py-12 sm:py-16" aria-labelledby="training-heading">
         <div className="flex flex-col sm:flex-row justify-between gap-4 mb-8"><h2 id="training-heading" className="text-2xl sm:text-3xl font-semibold tracking-tight">A little structure. Better practice.</h2><Link href="/auth/register" className="text-sm text-accent inline-flex items-center gap-2">Create your profile <ArrowRight className="w-4 h-4" aria-hidden="true" /></Link></div>
         <div className="grid md:grid-cols-3 gap-8">
